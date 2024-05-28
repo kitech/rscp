@@ -3,10 +3,14 @@ extern crate libc;
 use libc::{c_void, c_char}; //, malloc, free};
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::any;
+// use std::any;
 use std::fmt;
 use std::any::Any;
 
+// utils make rustc happy
+pub fn useit<T>(_vx : T) {  }
+
+// cross langs
 // the trait `std::default::Default` is implemented for `u8`
 #[derive(Default)]
 #[repr(C)]
@@ -79,7 +83,28 @@ impl ffiparam {
 }
 
 fn dummy_ffifuncproxy_placeholder(_v: &ffiparam) {}
-static mut ffifuncproxy_rs2go : fn(v:&ffiparam) = dummy_ffifuncproxy_placeholder;
+// #[warn(non_upper_case_globals)]
+static mut FFIFUNCPROXY_RS2GO_FNPTR : fn(_v:&ffiparam) = dummy_ffifuncproxy_placeholder;
+
+pub fn ffifuncproxy_rs2go(_v:&ffiparam) {
+    unsafe {
+        FFIFUNCPROXY_RS2GO_FNPTR(_v);
+    }
+}
+
+pub fn initmod() {
+
+    if false {
+        initmodinner();
+    }
+}
+fn initmodinner() {
+    if false {
+        let prm =  &ffiparam::default();
+        dummy_ffifuncproxy_placeholder(prm);
+        ffifuncproxy_rs2go(prm);
+    }
+}
 
 /////////////
 pub fn cstrfrom_u8ptr(ptr :*const u8, len: usize) -> &'static str {
@@ -227,7 +252,7 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
     // println!("ptrx type {}", tyref);
 
     let mut retval : usize = 0;
-    _ = retval;
+    useit(retval);
     let p : &dyn Any = & ptrx;
     // p.is::<usize>();
     // <dyn Any>::is::<usize>;
@@ -321,16 +346,21 @@ pub struct Splog {
 
 impl Splog {
     pub fn print<T>(&self, vx : T, args : fmt::Arguments) {
-
+        useit(vx);
+        useit(args);
     }
 
     pub fn errprint<T>(&self, vx : T, args : fmt::Arguments) {
+        useit(vx);
+        useit(args);
 
     }
 }
 
 impl Splog {
     pub fn nilprint<T>(&self, vx : T, args : fmt::Arguments) {
+        useit(vx);
+        useit(args);
     
     }
 }
@@ -357,11 +387,12 @@ pub fn sizeoft<T>() -> usize {
     std::mem::size_of::<T>()
 }
 // usage: sizeof(var)
-pub fn sizeof<T>(vx : T) -> usize {
+pub fn sizeof<T>(_vx : T) -> usize {
     std::mem::size_of::<T>()
 }
 
 
+// \see std::ptr::null_mut()
 pub const NILVOIDPTRM : *mut c_void = 0 as *mut c_void;
 pub const NILCHARPTRM : *mut c_char = 0 as *mut c_char;
 pub const NILWCHARPTRM : *mut libc::wchar_t = 0 as *mut libc::wchar_t;
@@ -383,12 +414,14 @@ pub type Charptr = *const c_char;
 pub type Wcharptr = *const libc::wchar_t;
 pub type I8ptr = *const i8;
 pub type U8ptr = *const u8;
-// tuple struct or tuple variant, found type alias `I8ptr`
 
+// tuple struct or tuple variant, found type alias `I8ptr`
+// tuple structs
 pub struct Voidptrwp(*mut c_void);
 pub struct Charptrwp(*mut c_char);
 pub struct U8ptrwp(*mut u8);
 pub struct I8ptrwp(*mut i8);
+
 impl std::fmt::Display for I8ptrwp {
     fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         let addr : usize = 0;
@@ -408,6 +441,31 @@ impl std::fmt::Display for I8ptrwp {
         let _ = f.write_str(format!("0x{}", addr).as_str());
 
         // println!("fmt *mut i8 0x{}", p3);
+        let _ = self.0;
+        Ok(())
+    }
+    
+}
+impl std::fmt::Display for U8ptrwp {
+    fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let addr : usize = 0;
+        // let x = &self;
+        // x as *mut I8ptrwp;
+        let p2 = &addr as *const usize;
+        let p3 = self as *const U8ptrwp;
+        let p4 = p2 as *mut c_void;
+        let p5 = p3 as *mut c_void;
+        unsafe { libc::memcpy(p4, p5, sizeof(addr)); }
+        // println!("cpyaddr 0x{}", addr);
+
+        // f.write_str
+        // f.write_char
+        // f.write_fmt
+        // f.write_i32,i64...
+        let _ = f.write_str(format!("0x{}", addr).as_str());
+
+        // println!("fmt *mut i8 0x{}", p3);
+        let _ = self.0;
         Ok(())
     }
     
@@ -431,6 +489,7 @@ impl std::fmt::Display for Charptrwp {
         let _ = f.write_str(format!("0x{}", addr).as_str());
 
         // println!("fmt *mut i8 0x{}", p3);
+        let _ = self.0;
         Ok(())
     }
     
@@ -454,6 +513,7 @@ impl std::fmt::Display for Voidptrwp {
         let _ = f.write_str(format!("0x{}", addr).as_str());
 
         // println!("fmt *mut i8 0x{}", p3);
+        let _ = self.0;
         Ok(())
     }
     
@@ -523,6 +583,9 @@ mod tests {
         // use core::fmt::rt::Argument;
         // let args = fmt::Arguments::new_v1();
         // l.print(123, args);
+
+        useit(l);
+        useit(result);
     }
 
     #[test]
