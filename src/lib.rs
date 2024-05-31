@@ -6,6 +6,8 @@ use std::ffi::CString;
 // use std::any;
 use std::fmt;
 use std::any::Any;
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
 
 // utils make rustc happy
 pub fn useit<T>(_vx : T) {  }
@@ -83,12 +85,12 @@ impl ffiparam {
 }
 
 fn dummy_ffifuncproxy_placeholder(_v: &ffiparam) {}
-// #[warn(non_upper_case_globals)]
-static mut FFIFUNCPROXY_RS2GO_FNPTR : fn(_v:&ffiparam) = dummy_ffifuncproxy_placeholder;
+#[allow(non_upper_case_globals)]
+static mut ffifuncproxy_rs2go_fnptr : fn(_v:&ffiparam) = dummy_ffifuncproxy_placeholder;
 
 pub fn ffifuncproxy_rs2go(_v:&ffiparam) {
     unsafe {
-        FFIFUNCPROXY_RS2GO_FNPTR(_v);
+        ffifuncproxy_rs2go_fnptr(_v);
     }
 }
 
@@ -245,7 +247,11 @@ pub fn cfree<T: std::marker::Copy + 'static>(ptrx : T) {
     // unsafe { libc::free(ptr); }
 }
 
-
+pub fn ptrtostr2<T: 'static>(ptrx :& T) -> String {
+    let p = ptrx as *const T as *const c_void;
+    ptrtostr::<*const c_void>(p)
+    // "xx".into()
+}
 pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
     let tyval = typeofv(&ptrx);
     let tyref = (&tyval).as_str();
@@ -328,8 +334,26 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
         }
 
         _ => {
+            // fn()
+            let mut t = tyref.chars();
+            let b0 = t.nth(0).unwrap() == 'f' ;
+            t = tyref.chars();
+            let b1 = t.nth(1).unwrap() == 'n' ;
+            t = tyref.chars();
+            let b2 = t.nth(2).unwrap() == '(' ;
+            // println!("len {} {} {}", b0,b1,b2);
+            if tyref.len() > 2 && b0 && b1 && b2 {
+                let p2 = (&ptrx) as *const T as *const c_void;
+                let p3 = &retval as *const usize as *mut c_void;
+                unsafe {
+                    libc::memcpy(p3, p2, sizeof(retval));
+                }
+                // println!("len222: {} {}", tyref.len(), tyref);
+            }else{
             println!("ptrx type {} {}", tyref, "ptrx");
-             todo!()}
+            todo!()
+            }
+        }
     }
 
     let retstr = format!("0x{}", retval);
@@ -519,6 +543,7 @@ impl std::fmt::Display for Voidptrwp {
     
 }
 
+
 // impl std::fmt::Display for *const i8 {
 
 // }
@@ -535,6 +560,63 @@ impl std::fmt::Display for Voidptrwp {
 
 // }
 
+/////////// globals
+
+// must ptr or &
+#[allow(non_upper_case_globals)]
+pub static mut globvars : Lazy<HashMap<usize, String>> = Lazy::new(|| {
+    // println!("initializing");
+    let mut m = HashMap::new();
+    if false {
+        m.insert(13, "Spica".to_string());
+        m.insert(74, "Hoyten".to_string());
+        println!("htcnt {}", m.len());
+        m.remove(&13);
+        m.remove(&74);
+    }
+    m
+});
+
+pub fn globvarput2<T>(v : & T) -> usize {
+    let p1 = v as *const T;
+    let ret = p1 as usize;
+    unsafe { globvars.insert(ret, "wtval2".into()); }
+    return ret;
+}
+pub fn globvarput<T>(v : &mut T) -> usize {
+    // let x = &HashMap::<usize,usize>::new();
+    // let y : usize = x;
+    let p1 = v as *const T;
+    let ret = p1 as usize;
+    unsafe { globvars.insert(ret, "wtval".into()); }
+    return ret;
+}
+pub fn globvarget2<T>(/*v : &mut T,*/ n : usize) -> &'static T {
+    let p1 = n as *const T;
+    let p2 = p1 as *const T;
+    let p3 = unsafe { & *p2 };
+    p3
+}
+pub fn globvarget<T>(/*v : &mut T,*/ n : usize) -> &'static mut T {
+    // let p1 : &dyn Any = n as *const c_void;
+    let p1 = n as *const T;
+    let p2 = p1 as *mut T;
+    let p3 = unsafe { &mut *p2 };
+    p3
+}
+pub fn globvardel2<T>(v : & T) -> usize {
+    let p1 = v as *const T;
+    let ret = p1 as usize;
+    unsafe { globvars.remove(&ret); }
+    return ret;
+}
+pub fn globvardel<T>(/*v : T*/ n : usize) -> bool {
+    unsafe { globvars.remove(&n); }
+    true
+}
+pub fn globvarlen() -> usize {
+    unsafe { globvars.len() }
+}
 
 /////////// template
 pub fn add(left: usize, right: usize) -> usize {
