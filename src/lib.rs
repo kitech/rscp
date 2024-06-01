@@ -32,7 +32,12 @@ pub struct ffiparam {
 
 }
 
+
 impl ffiparam {
+
+    pub fn tostr(&self) -> String {
+        format!("ffiparam: p1:{} s1:{} p2:{} s2:{} p3:{} s3:{}", self.ptr, self.len, self.resp, self.len2, self.errmsg, self.code)
+    }
 
     pub fn setdata<T: 'static >(&mut self, data : T) {
         // println!("xxx {}", typeofv::<T>(&data));
@@ -82,6 +87,7 @@ impl ffiparam {
     // pub fn getdata3(&self) -> CStr {
     //     ""
     // }
+
 }
 
 fn dummy_ffifuncproxy_placeholder(_v: &ffiparam) {}
@@ -109,6 +115,7 @@ fn initmodinner() {
 }
 
 /////////////
+// bug: android
 pub fn cstrfrom_u8ptr(ptr :*const u8, len: usize) -> &'static str {
     unsafe {
     let vcc  = core::slice::from_raw_parts(ptr, len+1);
@@ -116,22 +123,51 @@ pub fn cstrfrom_u8ptr(ptr :*const u8, len: usize) -> &'static str {
     let x = CStr::from_bytes_with_nul_unchecked(vcc);
     let xs = x.to_str().to_owned().unwrap();
     
-    return xs
+    return xs;
     }
 }
+// bug: android
 pub fn cstrfrom_u8ptr2(ptr :*const u8, len: usize) -> String {
+    unsafe {
+        let vcc  = core::slice::from_raw_parts(ptr, len+1);
+        // println!("xxxx {}", vcc.len());
+        let x = CStr::from_bytes_with_nul_unchecked(vcc);
+        let xs : String = x.to_str().unwrap().into();
+        
+        return xs;
+    }
     // unsafe {
-    let xs = cstrfrom_u8ptr(ptr, len);
+    // let xs = cstrfrom_u8ptr(ptr, len);
     
-    return xs.to_string()
+    // return xs.to_string()
     // }
 }
 pub fn cstrfrom_usizeptr(ptrx :usize, len: usize) -> String {
+    if ptrx == 0 { return "nil".into(); }
+    
     let ptr = ptrx as *const u8;
     // unsafe {
-    let xs = cstrfrom_u8ptr(ptr, len);
+    let xs = cstrfrom_u8ptr2(ptr, len);
     
-    return xs.to_string()
+    return xs;
+    // }
+}
+
+// this works fine for android if ptr is null terminated c string
+pub fn cstrfrom_u8ptr3(ptr :*const u8, lenx: usize) -> String {
+    unsafe {
+        let x = CStr::from_ptr(ptr as *const libc::c_char);
+        let xs : String = x.to_str().unwrap().into();
+        return xs;
+    }
+}
+pub fn cstrfrom_usizeptr3(ptrx :usize, len: usize) -> String {
+    if ptrx == 0 { return "nil".into(); }
+    let ptr = ptrx as *const u8;
+    // unsafe {
+    let xs = cstrfrom_u8ptr3(ptr, len);
+    
+    return xs;
     // }
 }
 // todo
