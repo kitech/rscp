@@ -8,6 +8,32 @@ use std::fmt;
 use std::any::Any;
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
+use rustc_demangle::demangle;
+
+#[allow(non_camel_case_types)]
+pub type voidptr = *mut c_void;
+#[allow(non_camel_case_types)]
+pub type voidptrc = *const c_void;
+#[allow(non_camel_case_types)]
+pub type charptr = *mut i8;
+#[allow(non_camel_case_types)]
+pub type charptrc = *const i8;
+#[allow(non_camel_case_types)]
+pub type byteptr = *mut u8;
+#[allow(non_camel_case_types)]
+pub type byteptrc = *const u8;
+
+// seems copy two times???
+#[no_mangle]
+pub extern fn rust_demangle(name : charptrc, ret : voidptr) -> voidptr {
+    let x = unsafe {CStr::from_ptr(name)};
+    let y = demangle(x.to_str().unwrap()).to_string();
+    // println!("{},{}", y, y.len());
+    unsafe {
+    libc::memcpy(ret, y.as_bytes().as_ptr() as voidptrc, y.len());
+    }
+    return ret
+}
 
 // utils make rustc happy
 pub fn useit<T>(_vx : T) {  }
@@ -116,6 +142,12 @@ fn initmodinner() {
 
 /////////////
 // bug: android
+pub fn cstrfrom_u8ptr0(ptr : *const i8) -> String {
+    let x = unsafe {CStr::from_ptr(ptr)};
+    let y = x.to_str().to_owned().unwrap();
+    y.to_string()
+    // return x.tostr().unwrap()
+}
 pub fn cstrfrom_u8ptr(ptr :*const u8, len: usize) -> &'static str {
     unsafe {
     let vcc  = core::slice::from_raw_parts(ptr, len+1);
@@ -455,7 +487,7 @@ pub fn sizeof<T>(_vx : T) -> usize {
 // \see std::ptr::null_mut()
 pub const NILVOIDPTRM : *mut c_void = 0 as *mut c_void;
 pub const NILCHARPTRM : *mut c_char = 0 as *mut c_char;
-pub const NILWCHARPTRM : *mut libc::wchar_t = 0 as *mut libc::wchar_t;
+//pub const NILWCHARPTRM : *mut libc::wchar_t = 0 as *mut libc::wchar_t;
 pub const NILI8PTRM : *mut i8 = 0 as *mut i8;
 pub const NILU8PTRM : *mut u8 = 0 as *mut u8;
 pub const NILVOIDPTR : *const c_void = 0 as *const c_void;
@@ -466,7 +498,7 @@ pub const NILU8PTR : *const u8 = 0 as *const u8;
 
 pub type Voidptrm = *mut c_void;
 pub type Charptrm = *mut c_char;
-pub type Wcharptrm = *mut libc::wchar_t;
+//pub type Wcharptrm = *mut libc::wchar_t;
 pub type I8ptrm = *mut i8;
 pub type U8ptrm = *mut u8;
 pub type Voidptr = *const c_void;
@@ -655,9 +687,16 @@ pub fn globvarlen() -> usize {
 }
 
 /////////// template
-pub fn add(left: usize, right: usize) -> usize {
+#[no_mangle]
+pub extern "C" fn add(left: usize, right: usize) -> usize {
+    left + right + add2(left, right)
+}
+#[inline(never)]
+pub extern "C" fn add2(left: usize, right: usize) -> usize {
     left + right
 }
+
+
 
 // cargo test --  --nocapture
 #[cfg(test)]
