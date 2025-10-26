@@ -1,15 +1,15 @@
-
 extern crate libc;
-use libc::{c_void, c_char}; //, malloc, free};
+use libc::{c_char, c_void}; //, malloc, free};
 use std::ffi::CStr;
 use std::ffi::CString;
 // use std::any;
-use std::fmt;
-use std::any::Any;
-use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use rustc_demangle::demangle;
+use std::any::Any;
+use std::collections::HashMap;
+use std::fmt;
 
+// some type alias
 #[allow(non_camel_case_types)]
 pub type voidptr = *mut c_void;
 #[allow(non_camel_case_types)]
@@ -23,27 +23,62 @@ pub type byteptr = *mut u8;
 #[allow(non_camel_case_types)]
 pub type byteptrc = *const u8;
 
+// \see std::ptr::null_mut()
+pub const nilvoidptr: *mut c_void = 0 as *mut c_void;
+pub const nilcharptr: *mut c_char = 0 as *mut c_char;
+//pub const NILWCHARPTRM : *mut libc::wchar_t = 0 as *mut libc::wchar_t;
+pub const nili8ptr: *mut i8 = 0 as *mut i8;
+pub const nilu8ptr: *mut u8 = 0 as *mut u8;
+pub const nilvoidptrc: *const c_void = 0 as *const c_void;
+pub const nilcharptrc: *const c_char = 0 as *const c_char;
+pub const nili8ptrc: *const i8 = 0 as *const i8;
+pub const nilu8ptrc: *const u8 = 0 as *const u8;
+
+#[allow(non_camel_case_types)]
+pub type wcharptr = *mut libc::wchar_t;
+#[allow(non_camel_case_types)]
+pub type i8ptr = *mut i8;
+#[allow(non_camel_case_types)]
+pub type u8ptr = *mut u8;
+#[allow(non_camel_case_types)]
+pub type wcharptrc = *const libc::wchar_t;
+#[allow(non_camel_case_types)]
+pub type i8ptrc = *const i8;
+#[allow(non_camel_case_types)]
+pub type u8ptrc = *const u8;
+
+// tuple struct or tuple variant, found type alias `I8ptr`
+// tuple structs
+pub struct Voidptrwp(*mut c_void);
+pub struct Charptrwp(*mut c_char);
+pub struct U8ptrwp(*mut u8);
+pub struct I8ptrwp(*mut i8);
+
+// pub mod dummy; // dont likeuse this
+// like this include!
+include!("./dummy.rs");
+// include!("./demangle.rs");
+
 // seems copy two times???
 #[no_mangle]
-pub extern fn rust_demangle(name : charptrc, ret : voidptr) -> voidptr {
-    let x = unsafe {CStr::from_ptr(name)};
+pub extern "C" fn rust_demangle(name: charptrc, ret: voidptr) -> voidptr {
+    let x = unsafe { CStr::from_ptr(name) };
     let y = demangle(x.to_str().unwrap()).to_string();
     // println!("{},{}", y, y.len());
     unsafe {
-    libc::memcpy(ret, y.as_bytes().as_ptr() as voidptrc, y.len());
+        libc::memcpy(ret, y.as_bytes().as_ptr() as voidptrc, y.len());
     }
-    return ret
+    return ret;
 }
 
 // utils make rustc happy
-pub fn useit<T>(_vx : T) {  }
+pub fn useit<T>(_vx: T) {}
 
 // cross langs
 // the trait `std::default::Default` is implemented for `u8`
 #[derive(Default)]
 #[repr(C)]
 pub struct ffiparam {
-
     // ptr: *const i8,
     pub ptr: usize,
     pub len: usize,
@@ -55,23 +90,22 @@ pub struct ffiparam {
     // errmsg: *const i8
     pub errmsg: usize,
     pub code: usize,
-
 }
 
-
 impl ffiparam {
-
     pub fn tostr(&self) -> String {
-        format!("ffiparam: p1:{} s1:{} p2:{} s2:{} p3:{} s3:{}", self.ptr, self.len, self.resp, self.len2, self.errmsg, self.code)
+        format!(
+            "ffiparam: p1:{} s1:{} p2:{} s2:{} p3:{} s3:{}",
+            self.ptr, self.len, self.resp, self.len2, self.errmsg, self.code
+        )
     }
 
-    pub fn setdata<T: 'static >(&mut self, data : T) {
+    pub fn setdata<T: 'static>(&mut self, data: T) {
         // println!("xxx {}", typeofv::<T>(&data));
-        let p : &dyn Any = &data;
-        
+        let p: &dyn Any = &data;
+
         match p {
             val if p.is::<&str>() => {
-                
                 let p2 = val.downcast_ref::<&str>().unwrap();
                 //println!("xxx &str {} {}", p2.len(), p2);
                 self.len = p2.len();
@@ -93,10 +127,10 @@ impl ffiparam {
             }
             // val if p.is::<CStr>() => {
             //     todo!()
-                // let p2 = val.downcast_ref::<CStr>().unwrap();
-                // let p3 = p2.as_bytes();
-                // let p4 : &str = p2.as_str();
-                // println!("xxx CString {} {}", p2.len(), p2.len());
+            // let p2 = val.downcast_ref::<CStr>().unwrap();
+            // let p3 = p2.as_bytes();
+            // let p4 : &str = p2.as_str();
+            // println!("xxx CString {} {}", p2.len(), p2.len());
             // }
             _ => {
                 todo!()
@@ -113,28 +147,26 @@ impl ffiparam {
     // pub fn getdata3(&self) -> CStr {
     //     ""
     // }
-
 }
 
 fn dummy_ffifuncproxy_placeholder(_v: &ffiparam) {}
 #[allow(non_upper_case_globals)]
-static mut ffifuncproxy_rs2go_fnptr : fn(_v:&ffiparam) = dummy_ffifuncproxy_placeholder;
+static mut ffifuncproxy_rs2go_fnptr: fn(_v: &ffiparam) = dummy_ffifuncproxy_placeholder;
 
-pub fn ffifuncproxy_rs2go(_v:&ffiparam) {
+pub fn ffifuncproxy_rs2go(_v: &ffiparam) {
     unsafe {
         ffifuncproxy_rs2go_fnptr(_v);
     }
 }
 
 pub fn initmod() {
-
     if false {
         initmodinner();
     }
 }
 fn initmodinner() {
     if false {
-        let prm =  &ffiparam::default();
+        let prm = &ffiparam::default();
         dummy_ffifuncproxy_placeholder(prm);
         ffifuncproxy_rs2go(prm);
     }
@@ -142,199 +174,232 @@ fn initmodinner() {
 
 /////////////
 // bug: android
-pub fn cstrfrom_u8ptr0(ptr : *const i8) -> String {
-    let x = unsafe {CStr::from_ptr(ptr)};
+pub fn cstrfrom_u8ptr0(ptr: *const i8) -> String {
+    let x = unsafe { CStr::from_ptr(ptr) };
     let y = x.to_str().to_owned().unwrap();
     y.to_string()
     // return x.tostr().unwrap()
 }
-pub fn cstrfrom_u8ptr(ptr :*const u8, len: usize) -> &'static str {
+pub fn cstrfrom_u8ptr(ptr: *const u8, len: usize) -> &'static str {
     unsafe {
-    let vcc  = core::slice::from_raw_parts(ptr, len+1);
-    // println!("xxxx {}", vcc.len());
-    let x = CStr::from_bytes_with_nul_unchecked(vcc);
-    let xs = x.to_str().to_owned().unwrap();
-    
-    return xs;
+        let vcc = core::slice::from_raw_parts(ptr, len + 1);
+        // println!("xxxx {}", vcc.len());
+        let x = CStr::from_bytes_with_nul_unchecked(vcc);
+        let xs = x.to_str().to_owned().unwrap();
+
+        return xs;
     }
 }
 // bug: android
-pub fn cstrfrom_u8ptr2(ptr :*const u8, len: usize) -> String {
+pub fn cstrfrom_u8ptr2(ptr: *const u8, len: usize) -> String {
     unsafe {
-        let vcc  = core::slice::from_raw_parts(ptr, len+1);
+        let vcc = core::slice::from_raw_parts(ptr, len + 1);
         // println!("xxxx {}", vcc.len());
         let x = CStr::from_bytes_with_nul_unchecked(vcc);
-        let xs : String = x.to_str().unwrap().into();
-        
+        let xs: String = x.to_str().unwrap().into();
+
         return xs;
     }
     // unsafe {
     // let xs = cstrfrom_u8ptr(ptr, len);
-    
+
     // return xs.to_string()
     // }
 }
-pub fn cstrfrom_usizeptr(ptrx :usize, len: usize) -> String {
-    if ptrx == 0 { return "nil".into(); }
-    
+pub fn cstrfrom_usizeptr(ptrx: usize, len: usize) -> String {
+    if ptrx == 0 {
+        return "nil".into();
+    }
+
     let ptr = ptrx as *const u8;
     // unsafe {
     let xs = cstrfrom_u8ptr2(ptr, len);
-    
+
     return xs;
     // }
 }
 
 // this works fine for android if ptr is null terminated c string
-pub fn cstrfrom_u8ptr3(ptr :*const u8, lenx: usize) -> String {
+pub fn cstrfrom_u8ptr3(ptr: *const u8, lenx: usize) -> String {
     unsafe {
         let x = CStr::from_ptr(ptr as *const libc::c_char);
-        let xs : String = x.to_str().unwrap().into();
+        let xs: String = x.to_str().unwrap().into();
         return xs;
     }
 }
-pub fn cstrfrom_usizeptr3(ptrx :usize, len: usize) -> String {
-    if ptrx == 0 { return "nil".into(); }
+pub fn cstrfrom_usizeptr3(ptrx: usize, len: usize) -> String {
+    if ptrx == 0 {
+        return "nil".into();
+    }
     let ptr = ptrx as *const u8;
     // unsafe {
     let xs = cstrfrom_u8ptr3(ptr, len);
-    
+
     return xs;
     // }
 }
 // todo
 // pub fn CStringfrom_u8ptr(ptrx :*const u8, len: usize) -> CString {
-    // let vcc  = core::slice::from_raw_parts(ptrx, len+1);
-    // vcc.into()
-    // return ()
+// let vcc  = core::slice::from_raw_parts(ptrx, len+1);
+// vcc.into()
+// return ()
 // }
-pub fn refstr2_cstru8(v : &str) -> *const u8 { v.as_ptr() }
-pub fn refstr2_cstrusize(v : &str) -> usize { v.as_ptr() as usize }
-pub fn refstr2_string(v : &str) -> String { v.into() }
-pub fn string2_refstr(v : &String) -> &str {
-    let vref  = v.as_str ();
+pub fn refstr2_cstru8(v: &str) -> *const u8 {
+    v.as_ptr()
+}
+pub fn refstr2_cstrusize(v: &str) -> usize {
+    v.as_ptr() as usize
+}
+pub fn refstr2_string(v: &str) -> String {
+    v.into()
+}
+pub fn string2_refstr(v: &String) -> &str {
+    let vref = v.as_str();
     return vref;
 }
 
 // c memory functions
-pub fn cfree_usize(ptrx : usize) {
+pub fn cfree_usize(ptrx: usize) {
     let ptr = ptrx as *mut c_void;
-    unsafe { libc::free(ptr); }
+    unsafe {
+        libc::free(ptr);
+    }
 }
-pub fn cfree_cvoid(ptr : *mut c_void) {
-    unsafe { libc::free(ptr); }
+pub fn cfree_cvoid(ptr: *mut c_void) {
+    unsafe {
+        libc::free(ptr);
+    }
 }
-pub fn cfree_u8ptr(ptrx : *const u8) {
+pub fn cfree_u8ptr(ptrx: *const u8) {
     let ptr = ptrx as *mut c_void;
-    unsafe { libc::free(ptr); }
+    unsafe {
+        libc::free(ptr);
+    }
 }
-pub fn cfree_cchar(ptrx : *const c_char) {
+pub fn cfree_cchar(ptrx: *const c_char) {
     let ptr = ptrx as *mut c_void;
-    unsafe { libc::free(ptr); }
+    unsafe {
+        libc::free(ptr);
+    }
 }
 // todo
 
-pub fn cfree<T: std::marker::Copy + 'static>(ptrx : T) {
+pub fn cfree<T: std::marker::Copy + 'static>(ptrx: T) {
     let tyval = typeofv(&ptrx);
     let tyref = (&tyval).as_str();
     // println!("ptrx type {}", tyref);
 
     let mut retptr = 0 as *mut c_void;
     _ = retptr;
-    let p : &dyn Any = & ptrx;
+    let p: &dyn Any = &ptrx;
     p.is::<usize>();
     // <dyn Any>::is::<usize>;
     match p {
         val if p.is::<usize>() => {
             let p2 = val.downcast_ref::<usize>().unwrap();
-            let p3 = *p2 as usize as  *mut c_void;
+            let p3 = *p2 as usize as *mut c_void;
             retptr = p3;
-             unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
             }
+        }
         val if p.is::<*const core::ffi::c_void>() => {
             let p2 = val.downcast_ref::<*const c_void>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
+            }
         }
         val if p.is::<*mut core::ffi::c_void>() => {
             let p2 = val.downcast_ref::<*mut c_void>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
+            }
         }
         val if p.is::<*const u8>() => {
             let p2 = val.downcast_ref::<*const u8>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
+            }
         }
         val if p.is::<*mut u8>() => {
             let p2 = val.downcast_ref::<*mut u8>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
+            }
         }
         val if p.is::<*const i8>() => {
             let p2 = val.downcast_ref::<*const i8>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            unsafe { libc::free(p3); }
+            unsafe {
+                libc::free(p3);
+            }
         }
         val if p.is::<*mut i8>() => {
             let p2 = val.downcast_ref::<*mut i8>().unwrap();
-            let p3 = *p2 as  *mut c_void;
+            let p3 = *p2 as *mut c_void;
             retptr = p3;
-            
         }
         _ => {
             println!("ptrx type {} {}", tyref, "ptrx");
-             todo!()}
+            todo!()
+        }
     }
-    unsafe { libc::free(retptr); }
+    unsafe {
+        libc::free(retptr);
+    }
 
     if false {
-    match tyref {
-        "usize" => {
-            // let ptr =  <dyn Any>::is::usize(ptrx) ;
-            // libc::free(ptr);
-            // ptrx.downcast::<usize>().unwrap();
+        match tyref {
+            "usize" => {
+                // let ptr =  <dyn Any>::is::usize(ptrx) ;
+                // libc::free(ptr);
+                // ptrx.downcast::<usize>().unwrap();
+            }
+            "*const core::ffi::c_void" => {}
+            "*const i8" => {}
+            "*const u8" => {}
+            "*mut core::ffi::c_void" => {}
+            "*mut i8" => {}
+            "*mut u8" => {}
+            &_ => {
+                println!("ptrx type {}", tyref);
+                todo!()
+            }
         }
-        "*const core::ffi::c_void" => {}
-        "*const i8" => {}
-        "*const u8" => {}
-        "*mut core::ffi::c_void" => {}
-        "*mut i8" => {}
-        "*mut u8" => {}
-        &_ => { 
-            println!("ptrx type {}", tyref);
-            todo!()}
-    }
     }
     // let ptr = ptrx as *mut c_void;
     // unsafe { libc::free(ptr); }
 }
 
-pub fn ptrtostr2<T: 'static>(ptrx :& T) -> String {
+pub fn ptrtostr2<T: 'static>(ptrx: &T) -> String {
     let p = ptrx as *const T as *const c_void;
     ptrtostr::<*const c_void>(p)
     // "xx".into()
 }
-pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
+pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx: T) -> String {
     let tyval = typeofv(&ptrx);
     let tyref = (&tyval).as_str();
     // println!("ptrx type {}", tyref);
 
-    let mut retval : usize = 0;
+    let mut retval: usize = 0;
     useit(retval);
-    let p : &dyn Any = & ptrx;
+    let p: &dyn Any = &ptrx;
     // p.is::<usize>();
     // <dyn Any>::is::<usize>;
     match p {
         val if p.is::<usize>() => {
             let p2 = val.downcast_ref::<usize>().unwrap();
             retval = *p2;
-            }
+        }
         val if p.is::<*const core::ffi::c_void>() => {
             let p2 = val.downcast_ref::<*const c_void>().unwrap();
             let p3 = *p2 as usize;
@@ -352,7 +417,7 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
         }
         val if p.is::<*mut u8>() => {
             let p2 = val.downcast_ref::<*mut u8>().unwrap();
-            let p3 = *p2 as  usize;
+            let p3 = *p2 as usize;
             retval = p3;
         }
         val if p.is::<*const i8>() => {
@@ -368,7 +433,7 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
         val if p.is::<i32>() => {
             let p2 = val.downcast_ref::<i32>().unwrap();
             let p3 = *p2 as i32;
-            return format!("{}", p3)
+            return format!("{}", p3);
         }
         val if p.is::<u32>() => {
             let p2 = val.downcast_ref::<u32>().unwrap();
@@ -378,37 +443,37 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
         val if p.is::<i64>() => {
             let p2 = val.downcast_ref::<i32>().unwrap();
             let p3 = *p2 as i64;
-            return format!("{}", p3)
+            return format!("{}", p3);
         }
         val if p.is::<u64>() => {
             let p2 = val.downcast_ref::<u64>().unwrap();
             let p3 = *p2 as u64;
-            return format!("{}", p3)
+            return format!("{}", p3);
         }
         val if p.is::<bool>() => {
             let p2 = val.downcast_ref::<bool>().unwrap();
             // let p3 = *p2 as u64;
-            return format!("{}", p2)
+            return format!("{}", p2);
         }
         val if p.is::<f32>() => {
             let p2 = val.downcast_ref::<f32>().unwrap();
             // let p3 = *p2 as u64;
-            return format!("{}", p2)
+            return format!("{}", p2);
         }
         val if p.is::<f64>() => {
             let p2 = val.downcast_ref::<f64>().unwrap();
             // let p3 = *p2 as u64;
-            return format!("{}", p2)
+            return format!("{}", p2);
         }
 
         _ => {
             // fn()
             let mut t = tyref.chars();
-            let b0 = t.nth(0).unwrap() == 'f' ;
+            let b0 = t.nth(0).unwrap() == 'f';
             t = tyref.chars();
-            let b1 = t.nth(1).unwrap() == 'n' ;
+            let b1 = t.nth(1).unwrap() == 'n';
             t = tyref.chars();
-            let b2 = t.nth(2).unwrap() == '(' ;
+            let b2 = t.nth(2).unwrap() == '(';
             // println!("len {} {} {}", b0,b1,b2);
             if tyref.len() > 2 && b0 && b1 && b2 {
                 let p2 = (&ptrx) as *const T as *const c_void;
@@ -417,9 +482,9 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
                     libc::memcpy(p3, p2, sizeof(retval));
                 }
                 // println!("len222: {} {}", tyref.len(), tyref);
-            }else{
-            println!("ptrx type {} {}", tyref, "ptrx");
-            todo!()
+            } else {
+                println!("ptrx type {} {}", tyref, "ptrx");
+                todo!()
             }
         }
     }
@@ -432,45 +497,41 @@ pub fn ptrtostr<T: std::marker::Copy + 'static>(ptrx : T) -> String {
 // todo
 // usage:
 #[derive(Default)]
-pub struct Splog {
-
-}
+pub struct Splog {}
 
 impl Splog {
-    pub fn print<T>(&self, vx : T, args : fmt::Arguments) {
+    pub fn print<T>(&self, vx: T, args: fmt::Arguments) {
         useit(vx);
         useit(args);
     }
 
-    pub fn errprint<T>(&self, vx : T, args : fmt::Arguments) {
+    pub fn errprint<T>(&self, vx: T, args: fmt::Arguments) {
         useit(vx);
         useit(args);
-
     }
 }
 
 impl Splog {
-    pub fn nilprint<T>(&self, vx : T, args : fmt::Arguments) {
+    pub fn nilprint<T>(&self, vx: T, args: fmt::Arguments) {
         useit(vx);
         useit(args);
-    
     }
 }
 
-/////////// types 
+/////////// types
 // usage: typeofv(var)
-pub fn typeofv<T>(_vx : &T) -> String {
+pub fn typeofv<T>(_vx: &T) -> String {
     std::any::type_name::<T>().into()
 }
 // usage: typeofv2(literal)
-pub fn typeofv2<T>(_vx : T) -> String {
+pub fn typeofv2<T>(_vx: T) -> String {
     std::any::type_name::<T>().into()
 }
 
-pub fn lenof<T>(_vx : &T) -> usize {
+pub fn lenof<T>(_vx: &T) -> usize {
     0
 }
-pub fn lenof2<T>(_vx : T) -> usize {
+pub fn lenof2<T>(_vx: T) -> usize {
     0
 }
 
@@ -479,51 +540,22 @@ pub fn sizeoft<T>() -> usize {
     std::mem::size_of::<T>()
 }
 // usage: sizeof(var)
-pub fn sizeof<T>(_vx : T) -> usize {
+pub fn sizeof<T>(_vx: T) -> usize {
     std::mem::size_of::<T>()
 }
 
-
-// \see std::ptr::null_mut()
-pub const NILVOIDPTRM : *mut c_void = 0 as *mut c_void;
-pub const NILCHARPTRM : *mut c_char = 0 as *mut c_char;
-//pub const NILWCHARPTRM : *mut libc::wchar_t = 0 as *mut libc::wchar_t;
-pub const NILI8PTRM : *mut i8 = 0 as *mut i8;
-pub const NILU8PTRM : *mut u8 = 0 as *mut u8;
-pub const NILVOIDPTR : *const c_void = 0 as *const c_void;
-pub const NILCHARPTR : *const c_char = 0 as *const c_char;
-pub const NILI8PTR : *const i8 = 0 as *const i8;
-pub const NILU8PTR : *const u8 = 0 as *const u8;
-
-
-pub type Voidptrm = *mut c_void;
-pub type Charptrm = *mut c_char;
-//pub type Wcharptrm = *mut libc::wchar_t;
-pub type I8ptrm = *mut i8;
-pub type U8ptrm = *mut u8;
-pub type Voidptr = *const c_void;
-pub type Charptr = *const c_char;
-pub type Wcharptr = *const libc::wchar_t;
-pub type I8ptr = *const i8;
-pub type U8ptr = *const u8;
-
-// tuple struct or tuple variant, found type alias `I8ptr`
-// tuple structs
-pub struct Voidptrwp(*mut c_void);
-pub struct Charptrwp(*mut c_char);
-pub struct U8ptrwp(*mut u8);
-pub struct I8ptrwp(*mut i8);
-
 impl std::fmt::Display for I8ptrwp {
-    fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let addr : usize = 0;
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let addr: usize = 0;
         // let x = &self;
         // x as *mut I8ptrwp;
         let p2 = &addr as *const usize;
         let p3 = self as *const I8ptrwp;
         let p4 = p2 as *mut c_void;
         let p5 = p3 as *mut c_void;
-        unsafe { libc::memcpy(p4, p5, sizeof(addr)); }
+        unsafe {
+            libc::memcpy(p4, p5, sizeof(addr));
+        }
         // println!("cpyaddr 0x{}", addr);
 
         // f.write_str
@@ -536,18 +568,19 @@ impl std::fmt::Display for I8ptrwp {
         let _ = self.0;
         Ok(())
     }
-    
 }
 impl std::fmt::Display for U8ptrwp {
-    fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let addr : usize = 0;
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let addr: usize = 0;
         // let x = &self;
         // x as *mut I8ptrwp;
         let p2 = &addr as *const usize;
         let p3 = self as *const U8ptrwp;
         let p4 = p2 as *mut c_void;
         let p5 = p3 as *mut c_void;
-        unsafe { libc::memcpy(p4, p5, sizeof(addr)); }
+        unsafe {
+            libc::memcpy(p4, p5, sizeof(addr));
+        }
         // println!("cpyaddr 0x{}", addr);
 
         // f.write_str
@@ -560,18 +593,19 @@ impl std::fmt::Display for U8ptrwp {
         let _ = self.0;
         Ok(())
     }
-    
 }
 impl std::fmt::Display for Charptrwp {
-    fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let addr : usize = 0;
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let addr: usize = 0;
         // let x = &self;
         // x as *mut I8ptrwp;
         let p2 = &addr as *const usize;
         let p3 = self as *const Charptrwp;
         let p4 = p2 as *mut c_void;
         let p5 = p3 as *mut c_void;
-        unsafe { libc::memcpy(p4, p5, sizeof(addr)); }
+        unsafe {
+            libc::memcpy(p4, p5, sizeof(addr));
+        }
         // println!("cpyaddr 0x{}", addr);
 
         // f.write_str
@@ -584,18 +618,19 @@ impl std::fmt::Display for Charptrwp {
         let _ = self.0;
         Ok(())
     }
-    
 }
 impl std::fmt::Display for Voidptrwp {
-    fn fmt(&self, f : &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let addr : usize = 0;
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let addr: usize = 0;
         // let x = &self;
         // x as *mut I8ptrwp;
         let p2 = &addr as *const usize;
         let p3 = self as *const Voidptrwp;
         let p4 = p2 as *mut c_void;
         let p5 = p3 as *mut c_void;
-        unsafe { libc::memcpy(p4, p5, sizeoft::<usize>()); }
+        unsafe {
+            libc::memcpy(p4, p5, sizeoft::<usize>());
+        }
         // println!("cpyaddr 0x{}", addr);
 
         // f.write_str
@@ -608,9 +643,7 @@ impl std::fmt::Display for Voidptrwp {
         let _ = self.0;
         Ok(())
     }
-    
 }
-
 
 // impl std::fmt::Display for *const i8 {
 
@@ -632,7 +665,7 @@ impl std::fmt::Display for Voidptrwp {
 
 // must ptr or &
 #[allow(non_upper_case_globals)]
-pub static mut globvars : Lazy<HashMap<usize, String>> = Lazy::new(|| {
+pub static mut globvars: Lazy<HashMap<usize, String>> = Lazy::new(|| {
     // println!("initializing");
     let mut m = HashMap::new();
     if false {
@@ -645,41 +678,49 @@ pub static mut globvars : Lazy<HashMap<usize, String>> = Lazy::new(|| {
     m
 });
 
-pub fn globvarput2<T>(v : & T) -> usize {
+pub fn globvarput2<T>(v: &T) -> usize {
     let p1 = v as *const T;
     let ret = p1 as usize;
-    unsafe { globvars.insert(ret, "wtval2".into()); }
+    unsafe {
+        globvars.insert(ret, "wtval2".into());
+    }
     return ret;
 }
-pub fn globvarput<T>(v : &mut T) -> usize {
+pub fn globvarput<T>(v: &mut T) -> usize {
     // let x = &HashMap::<usize,usize>::new();
     // let y : usize = x;
     let p1 = v as *const T;
     let ret = p1 as usize;
-    unsafe { globvars.insert(ret, "wtval".into()); }
+    unsafe {
+        globvars.insert(ret, "wtval".into());
+    }
     return ret;
 }
-pub fn globvarget2<T>(/*v : &mut T,*/ n : usize) -> &'static T {
+pub fn globvarget2<T>(/*v : &mut T,*/ n: usize) -> &'static T {
     let p1 = n as *const T;
     let p2 = p1 as *const T;
-    let p3 = unsafe { & *p2 };
+    let p3 = unsafe { &*p2 };
     p3
 }
-pub fn globvarget<T>(/*v : &mut T,*/ n : usize) -> &'static mut T {
+pub fn globvarget<T>(/*v : &mut T,*/ n: usize) -> &'static mut T {
     // let p1 : &dyn Any = n as *const c_void;
     let p1 = n as *const T;
     let p2 = p1 as *mut T;
     let p3 = unsafe { &mut *p2 };
     p3
 }
-pub fn globvardel2<T>(v : & T) -> usize {
+pub fn globvardel2<T>(v: &T) -> usize {
     let p1 = v as *const T;
     let ret = p1 as usize;
-    unsafe { globvars.remove(&ret); }
+    unsafe {
+        globvars.remove(&ret);
+    }
     return ret;
 }
-pub fn globvardel<T>(/*v : T*/ n : usize) -> bool {
-    unsafe { globvars.remove(&n); }
+pub fn globvardel<T>(/*v : T*/ n: usize) -> bool {
+    unsafe {
+        globvars.remove(&n);
+    }
     true
 }
 pub fn globvarlen() -> usize {
@@ -688,15 +729,13 @@ pub fn globvarlen() -> usize {
 
 /////////// template
 #[no_mangle]
-pub extern "C" fn add(left: usize, right: usize) -> usize {
-    left + right + add2(left, right)
+pub extern "C" fn addint(left: isize, right: isize) -> isize {
+    left + right + addint2(left, right)
 }
-#[inline(never)]
-pub extern "C" fn add2(left: usize, right: usize) -> usize {
+// #[inline(never)]
+pub extern "C" fn addint2(left: isize, right: isize) -> isize {
     left + right
 }
-
-
 
 // cargo test --  --nocapture
 #[cfg(test)]
@@ -705,8 +744,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        let result = addint(2, 3);
+        assert_eq!(result, 10);
     }
 
     #[test]
@@ -734,7 +773,7 @@ mod tests {
     #[test]
     fn log_line() {
         let l = Splog::default();
-        let result = add(2, 2);
+        let result = addint2(2, 3);
         // eprintln!("hehehhe {} {}", result, typeofv(678))
         // l.errprint(1, 2.into());
         // use core::fmt::rt::Argument;
@@ -747,12 +786,11 @@ mod tests {
 
     #[test]
     fn string2_refstr_t() {
-        let result = add(2, 2);
+        let result = addint(2, 3);
         let s = format!("str{}", 12345);
         let refs = string2_refstr(&s);
         eprintln!("hehehhe {} {} {}", result, typeofv2(678), refs);
         // l.errprint(1, 2.into());
-        
     }
 
     #[test]
@@ -761,7 +799,7 @@ mod tests {
         prm.setdata("ffffff");
         prm.setdata::<String>("ggggggg".into());
         let x = CString::new(b"hello...").unwrap();
-        prm.setdata( x );
+        prm.setdata(x);
     }
 
     #[test]
@@ -787,5 +825,3 @@ mod tests {
         }
     }
 }
-
-

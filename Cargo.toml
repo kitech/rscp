@@ -1,25 +1,37 @@
 [package]
-name = "rspp"
+name = "rscp"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "rspp"
-# name = "rspp_lib"
-crate-type = ["lib", "cdylib", "staticlib"]
+name = "rscp"
+# not "lib",
+# and not cdylib for lack `pub fn` symbols, only extern symbols
+crate-type = ["dylib", "staticlib"]
 
+# keep major.minor is ok
 [dependencies]
-libc = "0.2.85"
-once_cell = "1.19.0"
-rustc-demangle = "0.1.24"
-rustc-demangle-capi = "0.1.0"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+libc = "0.2"
+once_cell = "1.21"
+rustc-demangle = "0.1"
+rustc-demangle-capi = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 # log = "0.4"
 # env_logger = "0.9"
 
 # [dependencies]
-# uniffi = { version = "0.28" }
+# uniffi = { version = "0.30" }
 # [build-dependencies]
-# uniffi = { version = "0.28", features = [ "build" ] }
+# uniffi = { version = "0.30", features = [ "build" ] }
 # wait uniffi-bindgen binary
+
+# https://github.com/johnthagen/min-sized-rust
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size.
+lto = true
+codegen-units = 1
+panic = "abort"
+# RUSTFLAGS="-Zlocation-detail=none"
+# RUSTFLAGS="-Zfmt-debug=none"
