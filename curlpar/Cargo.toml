@@ -1,0 +1,12 @@
+[package]
+name = "curlpar"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+# name = "rscp"
+# not "lib",
+# and not cdylib for lack `pub fn` symbols, only extern symbols
+crate-type = ["dylib", "staticlib"]
+
+[dependencies]

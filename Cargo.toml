@@ -35,3 +35,7 @@ codegen-units = 1
 panic = "abort"
 # RUSTFLAGS="-Zlocation-detail=none"
 # RUSTFLAGS="-Zfmt-debug=none"
+
+[workspace]
+members = ["alpm","cparser", "curlpar", "gumbo", "neon"]
+resolver = "2" # wtmin
