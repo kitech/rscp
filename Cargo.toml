@@ -37,5 +37,5 @@ panic = "abort"
 # RUSTFLAGS="-Zfmt-debug=none"
 
 [workspace]
-members = ["alpm","cparser", "curlpar", "gumbo", "neon"]
+members = ["addr2linec","alpm","cparser", "curlpar", "gumbo", "neon"]
 resolver = "2" # wtmin
