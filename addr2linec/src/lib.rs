@@ -3,6 +3,17 @@ use addr2line::{self, Loader};
 extern crate libc;
 use std::ffi::CStr;
 
+// some test of mangling
+pub fn mgdiv1_(a: i8) {}
+pub fn mgdiv1_1(a: i8) {}
+// pub fn mgdiv2_(a: i16) {}
+// pub fn mgdiv3_(a: i32) {}
+// pub fn mgdiv4_(a: i64) {}
+// pub fn mgdiv5_(a: u8) {}
+// pub fn mgdiv6_(a: u16) {}
+// pub fn mgdiv7_(a: u32) {}
+// pub fn mgdiv8_(a: u64) {}
+
 // only support gcc compiled binary
 // not support tcc ...
 pub fn new_loader(filename: *mut libc::c_char) -> *mut Loader {

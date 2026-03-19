@@ -10,6 +10,7 @@ use std::fmt;
 // like this include!
 include!("./typedefs.rs");
 include!("./typeconv.rs");
+include!("./strconv.rs");
 include!("./dummy.rs");
 include!("./demangle.rs");
 include!("./splog.rs");
@@ -22,6 +23,7 @@ mod tests {
     include!("./tests.rs");
     include!("./typedefs_test.rs");
     include!("./typeconv_test.rs");
+    include!("./strconv_test.rs");
     include!("./dummy_test.rs");
     include!("./demangle_test.rs");
     include!("./splog_test.rs");
